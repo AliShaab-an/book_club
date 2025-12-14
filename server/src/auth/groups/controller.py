@@ -34,4 +34,10 @@ def update_group(db:DbSession,group_id:UUID,group_update: model.CreateGroup,curr
 def delete_group(db:DbSession,group_id: UUID, current_user: CurrentUser):
     return service.delete_group(current_user,db,group_id)
 
+@router.get("/search/all",response_model=List[model.GroupResponse])
+def search_groups(db:DbSession, query: str, current_user: CurrentUser):
+    return service.search_groups(current_user,db,query)
 
+@router.post("/{group_id}/join",status_code=status.HTTP_201_CREATED)
+def join_group(db:DbSession,group_id: UUID, current_user: CurrentUser):
+    return service.join_group(current_user,db,group_id)

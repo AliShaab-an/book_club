@@ -49,7 +49,8 @@ class GroupsRepositoryImpl implements GroupsRepository {
       final result = await httpService.get('/group/', token: token);
 
       return result.fold((failure) => Left(failure), (data) {
-        final List<dynamic> groupsJson = data as List<dynamic>;
+        final List<dynamic> groupsJson = (data['data'] as List<dynamic>?) ?? 
+                                        (data is List ? data as List<dynamic> : <dynamic>[]);
         final groups = groupsJson
             .map((json) => GroupModel.fromMap(json as Map<String, dynamic>))
             .toList();
@@ -114,6 +115,52 @@ class GroupsRepositoryImpl implements GroupsRepository {
       }
 
       final result = await httpService.delete('/group/$groupId', token: token);
+
+      return result.fold((failure) => Left(failure), (_) => const Right(null));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<entities.Group>>> searchGroups(String query) async {
+    try {
+      final token = await tokenManager.getToken();
+      if (token == null) {
+        return Left(AuthFailure(message: 'Not authenticated'));
+      }
+
+      final result = await httpService.get(
+        '/group/search/all?query=$query',
+        token: token,
+      );
+
+      return result.fold((failure) => Left(failure), (data) {
+        final List<dynamic> groupsJson = (data['data'] as List<dynamic>?) ?? 
+                                        (data is List ? data as List<dynamic> : <dynamic>[]);
+        final groups = groupsJson
+            .map((json) => GroupModel.fromMap(json as Map<String, dynamic>))
+            .toList();
+        return Right(groups);
+      });
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> joinGroup(String groupId) async {
+    try {
+      final token = await tokenManager.getToken();
+      if (token == null) {
+        return Left(AuthFailure(message: 'Not authenticated'));
+      }
+
+      final result = await httpService.post(
+        '/group/$groupId/join',
+        {},
+        token: token,
+      );
 
       return result.fold((failure) => Left(failure), (_) => const Right(null));
     } catch (e) {

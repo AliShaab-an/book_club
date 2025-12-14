@@ -59,6 +59,34 @@ class HttpService {
     }
   }
 
+  /// Post with application/x-www-form-urlencoded content type
+  /// Used for OAuth2 endpoints that require form data
+  Future<Either<Failure, Map<String, dynamic>>> postFormUrlEncoded(
+    String endpoint,
+    Map<String, String> body, {
+    String? token,
+  }) async {
+    try {
+      final headers = <String, String>{
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      };
+      if (token != null) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: headers,
+        body: body,
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
+    }
+  }
+
   Future<Either<Failure, Map<String, dynamic>>> put(
     String endpoint,
     Map<String, dynamic> body, {
@@ -102,7 +130,15 @@ class HttpService {
         if (response.body.isEmpty) {
           return const Right({});
         }
-        return Right(jsonDecode(response.body));
+        final decoded = jsonDecode(response.body);
+        // Handle both Map and List responses
+        if (decoded is List) {
+          return Right({'data': decoded});
+        } else if (decoded is Map<String, dynamic>) {
+          return Right(decoded);
+        } else {
+          return Right({'data': decoded});
+        }
       case 400:
         return Left(
           ValidationFailure(message: _extractErrorMessage(response.body)),

@@ -5,16 +5,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-class GroupsListPage extends ConsumerWidget {
+class GroupsListPage extends ConsumerStatefulWidget {
   const GroupsListPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GroupsListPage> createState() => _GroupsListPageState();
+}
+
+class _GroupsListPageState extends ConsumerState<GroupsListPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final groupsAsync = ref.watch(groupsListProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Groups'),
+        title: const Text('Groups'),
         backgroundColor: Pallete.greenColor,
         actions: [
           IconButton(
@@ -22,154 +45,352 @@ class GroupsListPage extends ConsumerWidget {
             onPressed: () => _showCreateGroupDialog(context, ref),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          tabs: const [
+            Tab(text: 'My Groups'),
+            Tab(text: 'Discover'),
+          ],
+        ),
       ),
-      body: groupsAsync.when(
-        data: (groups) {
-          if (groups.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.group_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No groups yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // My Groups Tab
+          groupsAsync.when(
+            data: (groups) => _buildMyGroupsList(groups),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => _buildErrorWidget(error),
+          ),
+          // Discover Groups Tab
+          _buildDiscoverTab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyGroupsList(List groups) {
+    if (groups.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.group_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No groups yet',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Create your first book club group',
+              style: TextStyle(color: Colors.grey[500]),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => _showCreateGroupDialog(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Create Group'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Pallete.greenColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(groupsListProvider);
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: groups.length,
+        itemBuilder: (context, index) {
+          final group = groups[index];
+          return _buildGroupCard(group, isOwnGroup: true);
+        },
+      ),
+    );
+  }
+
+  Widget _buildDiscoverTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search groups...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+              filled: true,
+              fillColor: Colors.grey[100],
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+            onSubmitted: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: _searchQuery.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Search for groups',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Find book clubs to join',
+                        style: TextStyle(color: Colors.grey[500]),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Create your first book club group',
-                    style: TextStyle(color: Colors.grey[500]),
+                )
+              : _buildSearchResults(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSearchResults() {
+    return FutureBuilder(
+      key: ValueKey(_searchQuery),
+      future: _searchGroups(_searchQuery),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 16),
+                Text(
+                  'Error searching groups',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  snapshot.error.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final groups = snapshot.data as List? ?? [];
+
+        if (groups.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 16),
+                Text(
+                  'No groups found',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Try a different search term',
+                  style: TextStyle(color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: groups.length,
+          itemBuilder: (context, index) {
+            final group = groups[index];
+            return _buildGroupCard(group, isOwnGroup: false);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildGroupCard(dynamic group, {required bool isOwnGroup}) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Pallete.greenColor,
+          child: Text(
+            group.name[0].toUpperCase(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          group.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: group.description != null
+            ? Text(
+                group.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              )
+            : null,
+        trailing: isOwnGroup
+            ? PopupMenuButton(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 20),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () => _showCreateGroupDialog(context, ref),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Group'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Pallete.greenColor,
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, size: 20, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
                     ),
                   ),
                 ],
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _showEditGroupDialog(context, ref, group);
+                  } else if (value == 'delete') {
+                    _deleteGroup(context, ref, group.id);
+                  }
+                },
+              )
+            : ElevatedButton(
+                onPressed: () => _joinGroup(group.id),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Pallete.greenColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                child: const Text('Join'),
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(groupsListProvider);
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: groups.length,
-              itemBuilder: (context, index) {
-                final group = groups[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 2,
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Pallete.greenColor,
-                      child: Text(
-                        group.name[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+        onTap: isOwnGroup
+            ? () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GroupBooksPage(
+                      groupId: group.id,
+                      groupName: group.name,
                     ),
-                    title: Text(
-                      group.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: group.description != null
-                        ? Text(
-                            group.description!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          )
-                        : null,
-                    trailing: PopupMenuButton(
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Row(
-                            children: [
-                              Icon(Icons.edit, size: 20),
-                              SizedBox(width: 8),
-                              Text('Edit'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete, size: 20, color: Colors.red),
-                              SizedBox(width: 8),
-                              Text(
-                                'Delete',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          _showEditGroupDialog(context, ref, group);
-                        } else if (value == 'delete') {
-                          _deleteGroup(context, ref, group.id);
-                        }
-                      },
-                    ),
-                    onTap: () {
-                      // Navigate to group books page
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GroupBooksPage(
-                            groupId: group.id,
-                            groupName: group.name,
-                          ),
-                        ),
-                      );
-                    },
                   ),
                 );
-              },
-            ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading groups',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(groupsListProvider),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+              }
+            : null,
       ),
+    );
+  }
+
+  Widget _buildErrorWidget(Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 16),
+          const Text(
+            'Error loading groups',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => ref.invalidate(groupsListProvider),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<List> _searchGroups(String query) async {
+    final repository = ref.read(groupsRepositoryProvider);
+    final result = await repository.searchGroups(query);
+    return result.fold(
+      (failure) => throw Exception(failure.errMessage),
+      (groups) => groups,
+    );
+  }
+
+  Future<void> _joinGroup(String groupId) async {
+    final repository = ref.read(groupsRepositoryProvider);
+    final result = await repository.joinGroup(groupId);
+
+    result.fold(
+      (failure) {
+        Fluttertoast.showToast(
+          msg: failure.errMessage,
+          backgroundColor: Colors.red,
+        );
+      },
+      (_) {
+        Fluttertoast.showToast(
+          msg: 'Successfully joined the group!',
+          backgroundColor: Colors.green,
+        );
+        ref.invalidate(groupsListProvider);
+        _tabController.animateTo(0); // Switch to My Groups tab
+      },
     );
   }
 

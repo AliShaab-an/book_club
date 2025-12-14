@@ -19,4 +19,8 @@ abstract class GroupsRepository {
   });
 
   Future<Either<Failure, void>> deleteGroup(String groupId);
+
+  Future<Either<Failure, List<entities.Group>>> searchGroups(String query);
+
+  Future<Either<Failure, void>> joinGroup(String groupId);
 }

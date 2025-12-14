@@ -55,8 +55,8 @@ class _CustomSignInFormState extends ConsumerState<CustomSignInForm> {
           backgroundColor: Colors.green,
           textColor: Colors.white,
         );
-        // Navigate to home or dashboard
-        customReplacementNavigation(context, "/"); // Adjust route as needed
+        // Navigate to home page after successful login
+        customReplacementNavigation(context, "/home");
       }
     });
 

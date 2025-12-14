@@ -3,7 +3,7 @@ import 'package:client/core/errors/failures.dart';
 import 'package:client/core/services/http_service.dart';
 import 'package:client/core/services/token_manager.dart';
 import 'package:client/features/auth/data/models/user_model.dart';
-import 'package:client/features/auth/domain/entites/user.dart';
+import 'package:client/features/auth/domain/entities/user.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -46,21 +46,28 @@ class AuthRemoteRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      // FastAPI OAuth2 expects form data
-      final result = await httpService.post('/auth/token', {
+      // FastAPI OAuth2 expects application/x-www-form-urlencoded
+      final result = await httpService.postFormUrlEncoded('/auth/token', {
         'username': email, // FastAPI OAuth2 uses 'username' field
         'password': password,
-        'grant_type': 'password',
       });
 
       return result.fold((failure) => Left(failure), (data) async {
-        final token = data['access_token'] as String;
+        // Parse the access_token from response
+        final token = data['access_token'] as String?;
+        if (token == null || token.isEmpty) {
+          return Left(AuthFailure(message: 'No access token received'));
+        }
+
+        // Save token using SharedPreferences via TokenManager
         await tokenManager.saveToken(token);
 
-        // You might need to get user info after login
-        // For now, creating a user with token
+        // Get token type (usually "bearer")
+        final tokenType = data['token_type'] as String? ?? 'bearer';
+
+        // Create user model with token
         final user = UserModel(
-          id: '', // You might need to get this from a separate endpoint
+          id: '', // Will be populated from /users/me endpoint if needed
           firstName: '',
           lastName: '',
           email: email,

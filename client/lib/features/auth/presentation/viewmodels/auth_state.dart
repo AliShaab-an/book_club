@@ -1,4 +1,4 @@
-import 'package:client/features/auth/domain/entites/user.dart';
+import 'package:client/features/auth/domain/entities/user.dart';
 
 // Auth State
 class AuthState {

@@ -2,7 +2,7 @@ import 'package:client/core/errors/failure.dart';
 import 'package:client/features/auth/domain/repositories/auth_repository.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../entites/user.dart';
+import '../entities/user.dart';
 
 class SignUp {
   final AuthRepository repository;

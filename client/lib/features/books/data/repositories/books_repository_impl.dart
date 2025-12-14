@@ -19,7 +19,10 @@ class BooksRepositoryImpl implements BooksRepository {
       final result = await httpService.get('/book/search?query=$query');
 
       return result.fold((failure) => Left(failure), (data) {
-        final List<dynamic> booksJson = data as List<dynamic>;
+        // Extract the list from the wrapper if it exists
+        final List<dynamic> booksJson =
+            (data['data'] as List<dynamic>?) ??
+            (data is List ? data as List<dynamic> : <dynamic>[]);
         final books = booksJson
             .map((json) => BookModel.fromMap(json as Map<String, dynamic>))
             .toList();
@@ -75,7 +78,10 @@ class BooksRepositoryImpl implements BooksRepository {
       final result = await httpService.get('/book/', token: token);
 
       return result.fold((failure) => Left(failure), (data) {
-        final List<dynamic> booksJson = data as List<dynamic>;
+        // Extract the list from the wrapper if it exists
+        final List<dynamic> booksJson =
+            (data['data'] as List<dynamic>?) ??
+            (data is List ? data as List<dynamic> : <dynamic>[]);
         final books = booksJson
             .map((json) => BookModel.fromMap(json as Map<String, dynamic>))
             .toList();

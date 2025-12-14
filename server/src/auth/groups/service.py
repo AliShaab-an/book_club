@@ -28,6 +28,13 @@ def get_groups(current_user: TokenData, db: Session) -> list[model.GroupResponse
     logging.info(f"Retrived {len(groups)} groups for user: {current_user.get_uuid()}")
     return groups
 
+def search_groups(current_user: TokenData, db: Session, query: str) -> list[model.GroupResponse]:
+    groups = db.query(Group).filter(
+        Group.name.ilike(f"%{query}%") | Group.description.ilike(f"%{query}%")
+    ).all()
+    logging.info(f"Found {len(groups)} groups matching query: {query}")
+    return groups
+
 def get_group_by_id(current_user:TokenData,db:Session,group_id:UUID) -> Group:
     group = db.query(Group).filter(Group.id == group_id).filter(Group.user_id == current_user.get_uuid()).first()
 

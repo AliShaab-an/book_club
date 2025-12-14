@@ -8,12 +8,12 @@ from .entities.group_members import GroupMember
 from .entities.disscusion_messages import DiscussionMessages
 from .api import register_routes
 from .logging import configure_logging, LogLevels
-
+import os
 app = FastAPI()
 
 configure_logging(LogLevels)
-
-# Create all tables in the database 
+# print("DATABASE_URL USED:", os.getenv("DATABASE_URL"))
+print("Registered tables:", list(Base.metadata.tables.keys()))
 Base.metadata.create_all(bind=engine)
 
 register_routes(app)
