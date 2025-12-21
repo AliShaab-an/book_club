@@ -3,3 +3,4 @@ FINAL_STEPS.md
 INTEGRATION_GUIDE.md
 .idea/
 .env
+server/venv/
