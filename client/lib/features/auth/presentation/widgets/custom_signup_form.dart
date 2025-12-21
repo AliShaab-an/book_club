@@ -3,6 +3,7 @@ import 'package:client/core/utils/app_colors.dart';
 import 'package:client/core/widgets/custom_button.dart';
 import 'package:client/core/widgets/custom_field.dart';
 import 'package:client/features/auth/presentation/viewmodels/auth_notifier.dart';
+import 'package:client/features/auth/presentation/viewmodels/auth_state.dart';
 import 'package:client/features/auth/presentation/widgets/terms_condition.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,7 @@ class _CustomSignupFormState extends ConsumerState<CustomSignupForm> {
   final TextEditingController _lastName = TextEditingController();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  bool _hasShownSuccessToast = false;
 
   @override
   void dispose() {
@@ -32,6 +34,9 @@ class _CustomSignupFormState extends ConsumerState<CustomSignupForm> {
   }
 
   Future<void> _handleSignUp() async {
+    // Dismiss keyboard first
+    FocusScope.of(context).unfocus();
+
     if (!formKey.currentState!.validate()) {
       return;
     }
@@ -63,28 +68,55 @@ class _CustomSignupFormState extends ConsumerState<CustomSignupForm> {
           email: _email.text.trim(),
           password: _password.text.trim(),
         );
-
-    // Check result
-    final authState = ref.read(authNotifierProvider);
-    if (authState.error != null) {
-      Fluttertoast.showToast(
-        msg: authState.error!,
-        backgroundColor: Colors.red,
-      );
-    } else if (authState.isAuthenticated) {
-      Fluttertoast.showToast(
-        msg: "Sign up successful!",
-        backgroundColor: Colors.green,
-      );
-      if (mounted) {
-        customReplacementNavigation(context, "/home");
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authNotifierProvider);
+
+    final authNotifier = ref.read(authNotifierProvider.notifier);
+
+    // Listen to auth state changes
+    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+      // Show error toast only when error changes
+      if (next.error != null && previous?.error != next.error) {
+        Fluttertoast.showToast(
+          msg: next.error!,
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        // Clear error after showing
+        Future.delayed(const Duration(milliseconds: 100), () {
+          authNotifier.clearError();
+        });
+      }
+
+      // Show success toast and navigate to login page when signup succeeds
+      if (next.signupSuccess &&
+          !next.isLoading &&
+          previous != null &&
+          !previous.signupSuccess &&
+          !_hasShownSuccessToast) {
+        _hasShownSuccessToast = true;
+        Fluttertoast.showToast(
+          msg: "Account created successfully! Please login.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+        // Reset signup success flag and navigate
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (context.mounted) {
+            // Reset the flag
+            authNotifier.resetSignupSuccess();
+            customReplacementNavigation(context, "/login");
+          }
+        });
+      }
+    });
 
     return Form(
       key: formKey,

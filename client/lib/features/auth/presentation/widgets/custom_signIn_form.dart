@@ -21,6 +21,17 @@ class _CustomSignInFormState extends ConsumerState<CustomSignInForm> {
   final formKey = GlobalKey<FormState>();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  bool _hasShownSuccessToast = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Reset authentication state when login page loads
+    // This ensures we can detect the transition from false to true
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authNotifierProvider.notifier).signOut();
+    });
+  }
 
   @override
   void dispose() {
@@ -36,7 +47,12 @@ class _CustomSignInFormState extends ConsumerState<CustomSignInForm> {
 
     // Listen to auth state changes
     ref.listen<AuthState>(authNotifierProvider, (previous, next) {
-      if (next.error != null) {
+      print(
+        'DEBUG Listener: previous auth=${previous?.isAuthenticated}, next auth=${next.isAuthenticated}, loading=${next.isLoading}, error=${next.error}',
+      );
+
+      // Show error toast only when error changes from null to non-null
+      if (next.error != null && previous?.error != next.error) {
         Fluttertoast.showToast(
           msg: next.error!,
           toastLength: Toast.LENGTH_SHORT,
@@ -44,10 +60,22 @@ class _CustomSignInFormState extends ConsumerState<CustomSignInForm> {
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
-        authNotifier.clearError();
+        // Clear error after showing
+        Future.delayed(const Duration(milliseconds: 100), () {
+          authNotifier.clearError();
+        });
       }
 
-      if (next.isAuthenticated && !next.isLoading) {
+      // Only show success toast when transitioning from unauthenticated to authenticated
+      // Check: authenticated, not loading, previous exists and was not authenticated (or was loading)
+      if (next.isAuthenticated &&
+          !next.isLoading &&
+          !_hasShownSuccessToast &&
+          (previous == null ||
+              !previous.isAuthenticated ||
+              previous.isLoading)) {
+        print('DEBUG Listener: Navigation triggered!');
+        _hasShownSuccessToast = true;
         Fluttertoast.showToast(
           msg: "Login successful!",
           toastLength: Toast.LENGTH_SHORT,
@@ -56,7 +84,18 @@ class _CustomSignInFormState extends ConsumerState<CustomSignInForm> {
           textColor: Colors.white,
         );
         // Navigate to home page after successful login
-        customReplacementNavigation(context, "/home");
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (context.mounted) {
+            print('DEBUG Listener: Calling navigation to /home');
+            customReplacementNavigation(context, "/home");
+          } else {
+            print('DEBUG Listener: Context not mounted!');
+          }
+        });
+      } else {
+        print(
+          'DEBUG Listener: Navigation NOT triggered - auth=${next.isAuthenticated}, loading=${next.isLoading}, hasShown=$_hasShownSuccessToast, prevAuth=${previous?.isAuthenticated}',
+        );
       }
     });
 
@@ -77,6 +116,9 @@ class _CustomSignInFormState extends ConsumerState<CustomSignInForm> {
             text: authState.isLoading ? "Signing In..." : "Sign In",
             onTap: () {
               if (authState.isLoading) return;
+
+              // Dismiss keyboard
+              FocusScope.of(context).unfocus();
 
               if (formKey.currentState!.validate()) {
                 // Additional validation

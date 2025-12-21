@@ -49,8 +49,9 @@ class GroupsRepositoryImpl implements GroupsRepository {
       final result = await httpService.get('/group/', token: token);
 
       return result.fold((failure) => Left(failure), (data) {
-        final List<dynamic> groupsJson = (data['data'] as List<dynamic>?) ?? 
-                                        (data is List ? data as List<dynamic> : <dynamic>[]);
+        final List<dynamic> groupsJson =
+            (data['data'] as List<dynamic>?) ??
+            (data is List ? data as List<dynamic> : <dynamic>[]);
         final groups = groupsJson
             .map((json) => GroupModel.fromMap(json as Map<String, dynamic>))
             .toList();
@@ -123,7 +124,9 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
-  Future<Either<Failure, List<entities.Group>>> searchGroups(String query) async {
+  Future<Either<Failure, List<entities.Group>>> searchGroups(
+    String query,
+  ) async {
     try {
       final token = await tokenManager.getToken();
       if (token == null) {
@@ -136,8 +139,9 @@ class GroupsRepositoryImpl implements GroupsRepository {
       );
 
       return result.fold((failure) => Left(failure), (data) {
-        final List<dynamic> groupsJson = (data['data'] as List<dynamic>?) ?? 
-                                        (data is List ? data as List<dynamic> : <dynamic>[]);
+        final List<dynamic> groupsJson =
+            (data['data'] as List<dynamic>?) ??
+            (data is List ? data as List<dynamic> : <dynamic>[]);
         final groups = groupsJson
             .map((json) => GroupModel.fromMap(json as Map<String, dynamic>))
             .toList();

@@ -149,9 +149,19 @@ class HttpService {
         return Left(AuthFailure(message: 'Access forbidden'));
       case 404:
         return Left(ServerFailure(message: 'Resource not found'));
+      case 409:
+        return Left(
+          ValidationFailure(message: _extractErrorMessage(response.body)),
+        );
       case 422:
         return Left(
           ValidationFailure(message: _extractErrorMessage(response.body)),
+        );
+      case 429:
+        return Left(
+          ServerFailure(
+            message: 'Too many requests. Please wait a moment and try again.',
+          ),
         );
       case 500:
         return Left(ServerFailure(message: 'Internal server error'));
@@ -166,11 +176,36 @@ class HttpService {
     try {
       final decoded = jsonDecode(responseBody);
       if (decoded is Map<String, dynamic>) {
-        return decoded['detail'] ?? decoded['message'] ?? 'Unknown error';
+        // Handle FastAPI validation errors
+        if (decoded['detail'] != null) {
+          final detail = decoded['detail'];
+
+          // If detail is a list (validation errors)
+          if (detail is List && detail.isNotEmpty) {
+            final errors = detail
+                .map((e) {
+                  if (e is Map<String, dynamic>) {
+                    final field = e['loc']?.last ?? 'field';
+                    final msg = e['msg'] ?? 'validation error';
+                    return '$field: $msg';
+                  }
+                  return e.toString();
+                })
+                .join(', ');
+            return errors;
+          }
+
+          // If detail is a string
+          if (detail is String) {
+            return detail;
+          }
+        }
+
+        return decoded['message'] ?? 'Unknown error';
       }
       return responseBody;
     } catch (e) {
-      return responseBody;
+      return responseBody.isNotEmpty ? responseBody : 'Unknown error';
     }
   }
 }

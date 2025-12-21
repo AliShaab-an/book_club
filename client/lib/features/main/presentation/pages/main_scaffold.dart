@@ -1,7 +1,9 @@
 import 'package:client/core/utils/app_colors.dart';
-import 'package:client/features/books/presentation/pages/books_search_page.dart';
-import 'package:client/features/groups/presentation/pages/groups_list_page.dart';
+import 'package:client/features/ai/presentation/pages/ai_assistant_page.dart';
+import 'package:client/features/books/presentation/pages/books_page.dart';
+import 'package:client/features/clubs/presentation/pages/clubs_page.dart';
 import 'package:client/features/home/presentation/pages/home_page.dart';
+import 'package:client/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,8 +20,10 @@ class MainScaffold extends ConsumerWidget {
     // List of pages to display
     final List<Widget> pages = [
       const HomePage(),
-      const GroupsListPage(),
-      const BooksSearchPage(),
+      const BooksPage(),
+      const ClubsPage(),
+      const AiAssistantPage(),
+      const ProfilePage(),
     ];
 
     return Scaffold(
@@ -34,8 +38,10 @@ class MainScaffold extends ConsumerWidget {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Groups'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Books'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Books'),
+          BottomNavigationBarItem(icon: Icon(Icons.groups), label: 'Clubs'),
+          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: 'AI'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );

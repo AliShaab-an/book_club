@@ -15,7 +15,7 @@ router = APIRouter(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/hour")
+@limiter.limit("20/minute")  # Allow 20 signups per minute (increased from 5/hour)
 async def register_user(request: Request, db: DbSession,
                       register_user_request: model.RegisterUserRequest):
     service.register_user(db, register_user_request)

@@ -4,9 +4,14 @@ import 'package:client/core/services/services_locator.dart';
 import 'package:client/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
-  WidgetsFlutterBinding();
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+
   setupServiceLocator();
   await getIt<CacheHelper>().init();
   runApp(ProviderScope(child: const MyApp()));

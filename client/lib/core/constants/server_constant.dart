@@ -1,9 +1,14 @@
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ServerConstant {
-
-  static const String _pcIp = "192.168.1.9";
-  static String serverUrl = Platform.isAndroid
-      ? 'http://$_pcIp:8000'
-      : 'http://127.0.0.1:8000';
+  static String get serverUrl {
+    if (Platform.isAndroid) {
+      return dotenv.env['API_BASE_URL_ANDROID'] ?? 'http://192.168.1.3:8000';
+    } else if (Platform.isIOS) {
+      return dotenv.env['API_BASE_URL_IOS'] ?? 'http://127.0.0.1:8000';
+    } else {
+      return dotenv.env['API_BASE_URL_WEB'] ?? 'http://127.0.0.1:8000';
+    }
+  }
 }

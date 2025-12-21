@@ -32,7 +32,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String email,
     required String password,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, clearError: true);
 
     final repository = _ref.read(authRepositoryProvider);
     final result = await SignUp(repository).call(
@@ -47,19 +47,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = state.copyWith(isLoading: false, error: failure.errMessage);
       },
       (user) {
+        // For signup, don't authenticate - user should login after signup
         state = state.copyWith(
           isLoading: false,
-          user: user,
-          isAuthenticated: true,
+          clearError: true,
+          signupSuccess: true, // Add flag to trigger navigation
         );
-        // Update token provider
-        _ref.read(tokenProvider.notifier).setToken(user.token);
       },
     );
   }
 
   Future<void> signIn({required String email, required String password}) async {
-    state = state.copyWith(isLoading: true, error: null);
+    print('DEBUG signIn: Starting login for $email');
+    state = state.copyWith(isLoading: true, clearError: true);
 
     final repository = _ref.read(authRepositoryProvider);
     final result = await SignIn(
@@ -68,13 +68,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
     result.fold(
       (failure) {
+        print('DEBUG signIn: Login failed - ${failure.errMessage}');
         state = state.copyWith(isLoading: false, error: failure.errMessage);
       },
       (user) {
+        print(
+          'DEBUG signIn: Login success - token: ${user.token}, email: ${user.email}',
+        );
         state = state.copyWith(
           isLoading: false,
           user: user,
           isAuthenticated: true,
+          clearError: true,
+        );
+        print(
+          'DEBUG signIn: State updated - isAuthenticated: ${state.isAuthenticated}',
         );
         // Update token provider
         _ref.read(tokenProvider.notifier).setToken(user.token);
@@ -106,5 +114,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   void clearError() {
     state = state.clearError();
+  }
+
+  void resetSignupSuccess() {
+    state = state.copyWith(signupSuccess: false);
   }
 }

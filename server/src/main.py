@@ -13,7 +13,7 @@ app = FastAPI()
 
 configure_logging(LogLevels)
 # print("DATABASE_URL USED:", os.getenv("DATABASE_URL"))
-print("Registered tables:", list(Base.metadata.tables.keys()))
+# print("Registered tables:", list(Base.metadata.tables.keys()))
 Base.metadata.create_all(bind=engine)
 
 register_routes(app)

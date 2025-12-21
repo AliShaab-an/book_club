@@ -11,11 +11,11 @@ class UserModel extends User {
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      id: map['id'],
-      firstName: map['first_name'],
-      lastName: map['last_name'],
-      email: map['email'],
-      token: map['token'],
+      id: map['id']?.toString() ?? '',
+      firstName: map['first_name']?.toString() ?? '',
+      lastName: map['last_name']?.toString() ?? '',
+      email: map['email']?.toString() ?? '',
+      token: map['token']?.toString() ?? map['access_token']?.toString() ?? '',
     );
   }
 

@@ -42,3 +42,25 @@ final bookSearchProvider = FutureProvider.family<List<Book>, String>((
     (books) => books,
   );
 });
+
+// Trending Books Provider - searches for popular/bestseller books
+final trendingBooksProvider = FutureProvider<List<Book>>((ref) async {
+  final repository = ref.read(booksRepositoryProvider);
+  final result = await repository.searchBooks('bestseller');
+
+  return result.fold(
+    (failure) => throw Exception(failure.errMessage),
+    (books) => books.take(5).toList(), // Limit to 5 books
+  );
+});
+
+// Recommended Books Provider - searches for trending fiction books
+final recommendedBooksProvider = FutureProvider<List<Book>>((ref) async {
+  final repository = ref.read(booksRepositoryProvider);
+  final result = await repository.searchBooks('trending fiction');
+
+  return result.fold(
+    (failure) => throw Exception(failure.errMessage),
+    (books) => books.take(5).toList(), // Limit to 5 books
+  );
+});

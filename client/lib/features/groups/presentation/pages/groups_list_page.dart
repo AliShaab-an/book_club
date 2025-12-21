@@ -292,10 +292,7 @@ class _GroupsListPageState extends ConsumerState<GroupsListPage>
                       children: [
                         Icon(Icons.delete, size: 20, color: Colors.red),
                         SizedBox(width: 8),
-                        Text(
-                          'Delete',
-                          style: TextStyle(color: Colors.red),
-                        ),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
                       ],
                     ),
                   ),
@@ -342,10 +339,7 @@ class _GroupsListPageState extends ConsumerState<GroupsListPage>
           const SizedBox(height: 16),
           const Text(
             'Error loading groups',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
