@@ -12,10 +12,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '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')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions'
 
-logging.info(f"OpenAI API Key loaded: {'Yes' if OPENAI_API_KEY else 'No'}")
+if not OPENAI_API_KEY:
+    logging.error("OPENAI_API_KEY not found in environment variables!")
+else:
+    logging.info("OpenAI API Key loaded successfully")
 
 
 async def call_openai(

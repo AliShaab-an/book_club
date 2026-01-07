@@ -21,8 +21,10 @@ class OpenAIService {
         throw Exception('Authentication token not found');
       }
 
-      print('DEBUG: Calling AI API with message: ${message.substring(0, message.length > 50 ? 50 : message.length)}...');
-      
+      print(
+        'DEBUG: Calling AI API with message: ${message.substring(0, message.length > 50 ? 50 : message.length)}...',
+      );
+
       final result = await httpService.post('/ai/chat', {
         'message': message,
         'conversation_history': conversationHistory,
