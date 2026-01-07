@@ -1,4 +1,5 @@
 import enum
+import uuid
 from sqlalchemy import Column,  ForeignKey,DateTime, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from ..database.core import Base
@@ -12,7 +13,7 @@ class ReadingStatus(enum.Enum):
 class GroupBook(Base):
     __tablename__ = 'group_book'
 
-    id = Column(UUID(as_uuid=True),primary_key=True,nullable=False)
+    id = Column(UUID(as_uuid=True),primary_key=True,nullable=False,default=uuid.uuid4)
     group_id = Column(UUID(as_uuid=True), ForeignKey('group.id'),nullable=False)
     book_id = Column(UUID(as_uuid=True), ForeignKey('books.id'),nullable=False)
     selected_date = Column(DateTime,default=lambda : datetime.now(timezone.utc), nullable=False)

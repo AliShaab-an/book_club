@@ -19,7 +19,9 @@ load_dotenv()
 # You would want to store this in an environment variable or a secret manager
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = 'HS256'
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Mobile apps typically need longer token expiration
+# 30 days = 43200 minutes
+ACCESS_TOKEN_EXPIRE_MINUTES = 43200  # 30 days
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')

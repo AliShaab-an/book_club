@@ -64,3 +64,14 @@ final recommendedBooksProvider = FutureProvider<List<Book>>((ref) async {
     (books) => books.take(5).toList(), // Limit to 5 books
   );
 });
+
+// User Library Provider - fetches user's personal library
+final userLibraryProvider = FutureProvider<List<Book>>((ref) async {
+  final repository = ref.read(booksRepositoryProvider);
+  final result = await repository.getBooks();
+
+  return result.fold(
+    (failure) => throw Exception(failure.errMessage),
+    (books) => books,
+  );
+});

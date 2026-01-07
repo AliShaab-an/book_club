@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:client/core/utils/app_colors.dart';
 import '../../domain/entities/club.dart';
+import '../../domain/utils/dummy_clubs_data.dart';
 import 'discover_club_card.dart';
 
 class ClubsByGenreSection extends StatefulWidget {
@@ -11,82 +12,20 @@ class ClubsByGenreSection extends StatefulWidget {
 }
 
 class _ClubsByGenreSectionState extends State<ClubsByGenreSection> {
-  final List<String> _genres = [
-    'All',
-    'Fiction',
-    'Mystery',
-    'Romance',
-    'Sci-Fi',
-    'Fantasy',
-    'Non-Fiction',
-  ];
-
+  late List<String> _genres;
+  late Map<String, List<Club>> _clubsByGenre;
   String _selectedGenre = 'All';
 
-  // TODO: Replace with actual data from repository
-  final Map<String, List<Club>> _clubsByGenre = {
-    'All': [
-      Club(
-        id: '20',
-        name: 'Weekend Readers',
-        bookId: '301',
-        bookTitle: 'Project Hail Mary',
-        bookCoverUrl: 'https://covers.openlibrary.org/b/id/12345678-L.jpg',
-        genre: 'Sci-Fi',
-        membersCount: 78,
-        createdAt: DateTime(2024, 2, 1),
-      ),
-      Club(
-        id: '21',
-        name: 'Classic Reads',
-        bookId: '302',
-        bookTitle: 'To Kill a Mockingbird',
-        bookCoverUrl: 'https://covers.openlibrary.org/b/id/8235123-L.jpg',
-        genre: 'Fiction',
-        membersCount: 112,
-        createdAt: DateTime(2024, 1, 20),
-      ),
-    ],
-    'Fiction': [
-      Club(
-        id: '21',
-        name: 'Classic Reads',
-        bookId: '302',
-        bookTitle: 'To Kill a Mockingbird',
-        bookCoverUrl: 'https://covers.openlibrary.org/b/id/8235123-L.jpg',
-        genre: 'Fiction',
-        membersCount: 112,
-        createdAt: DateTime(2024, 1, 20),
-      ),
-    ],
-    'Mystery': [
-      Club(
-        id: '22',
-        name: 'Mystery Solvers',
-        bookId: '303',
-        bookTitle: 'The Girl with the Dragon Tattoo',
-        bookCoverUrl: 'https://covers.openlibrary.org/b/id/8234567-L.jpg',
-        genre: 'Mystery',
-        membersCount: 93,
-        createdAt: DateTime(2024, 2, 15),
-      ),
-    ],
-    'Romance': [],
-    'Sci-Fi': [
-      Club(
-        id: '20',
-        name: 'Weekend Readers',
-        bookId: '301',
-        bookTitle: 'Project Hail Mary',
-        bookCoverUrl: 'https://covers.openlibrary.org/b/id/12345678-L.jpg',
-        genre: 'Sci-Fi',
-        membersCount: 78,
-        createdAt: DateTime(2024, 2, 1),
-      ),
-    ],
-    'Fantasy': [],
-    'Non-Fiction': [],
-  };
+  @override
+  void initState() {
+    super.initState();
+    // Load dummy data
+    _clubsByGenre = DummyClubsData.generateClubsByGenre();
+    _genres = [
+      'All',
+      ..._clubsByGenre.keys.where((k) => k != 'All').toList()..sort(),
+    ];
+  }
 
   void _joinClub(Club club) {
     // TODO: Call repository to join club

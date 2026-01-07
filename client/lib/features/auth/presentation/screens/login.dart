@@ -23,7 +23,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-    formKey.currentState!.validate();
   }
 
   @override

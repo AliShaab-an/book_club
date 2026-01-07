@@ -26,27 +26,41 @@ class MyClubCard extends StatelessWidget {
               // Book Cover
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  club.bookCoverUrl,
-                  width: 60,
-                  height: 90,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 60,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: Pallete.borderColor,
-                        borderRadius: BorderRadius.circular(8),
+                child: club.bookCoverUrl != null
+                    ? Image.network(
+                        club.bookCoverUrl!,
+                        width: 60,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 60,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: Pallete.borderColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.book,
+                              color: Pallete.greyColor,
+                              size: 30,
+                            ),
+                          );
+                        },
+                      )
+                    : Container(
+                        width: 60,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          color: Pallete.borderColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.book,
+                          color: Pallete.greyColor,
+                          size: 30,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.book,
-                        color: Pallete.greyColor,
-                        size: 30,
-                      ),
-                    );
-                  },
-                ),
               ),
               const SizedBox(width: 12),
               // Club Info
@@ -91,10 +105,15 @@ class MyClubCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      club.bookTitle,
-                      style: const TextStyle(
+                      club.bookTitle ?? 'No book selected',
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Pallete.greyColor,
+                        color: club.bookTitle != null
+                            ? Pallete.greyColor
+                            : Pallete.greyColor.withOpacity(0.6),
+                        fontStyle: club.bookTitle != null
+                            ? FontStyle.normal
+                            : FontStyle.italic,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

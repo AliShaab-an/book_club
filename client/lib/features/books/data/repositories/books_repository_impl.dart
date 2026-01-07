@@ -75,7 +75,7 @@ class BooksRepositoryImpl implements BooksRepository {
         return Left(AuthFailure(message: 'Not authenticated'));
       }
 
-      final result = await httpService.get('/book/', token: token);
+      final result = await httpService.get('/book/library', token: token);
 
       return result.fold((failure) => Left(failure), (data) {
         // Extract the list from the wrapper if it exists

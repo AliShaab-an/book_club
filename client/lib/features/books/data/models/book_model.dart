@@ -14,7 +14,7 @@ class BookModel extends Book {
 
   factory BookModel.fromMap(Map<String, dynamic> map) {
     return BookModel(
-      id: map['id']?.toString() ?? '',
+      id: map['id']?.toString() ?? map['external_id']?.toString() ?? '',
       title: map['title'] ?? '',
       author: map['author'],
       description: map['description'],
@@ -32,8 +32,8 @@ class BookModel extends Book {
       'description': description,
       'cover_image': coverImage,
       'pages': pages,
-      'source': source,
-      'external_id': externalId,
+      'source': source ?? 'search',
+      'external_id': externalId ?? id,
     };
   }
 }

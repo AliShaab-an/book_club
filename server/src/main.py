@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from .database.core import engine, Base
 from .entities.user import User
 from .entities.book import Book
+from .entities.user_book import UserBook
 from .entities.group import Group
 from .entities.group_books import GroupBook
 from .entities.group_members import GroupMember

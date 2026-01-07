@@ -1,65 +1,20 @@
 import 'package:client/features/books/domain/entities/book.dart';
 import 'package:client/features/books/presentation/widgets/library_book_tile.dart';
 import 'package:client/features/books/presentation/widgets/library_status_filter.dart';
+import 'package:client/features/books/presentation/providers/books_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:client/core/utils/app_colors.dart';
 
-class MyLibraryTab extends StatefulWidget {
+class MyLibraryTab extends ConsumerStatefulWidget {
   const MyLibraryTab({super.key});
 
   @override
-  State<MyLibraryTab> createState() => _MyLibraryTabState();
+  ConsumerState<MyLibraryTab> createState() => _MyLibraryTabState();
 }
 
-class _MyLibraryTabState extends State<MyLibraryTab> {
+class _MyLibraryTabState extends ConsumerState<MyLibraryTab> {
   ReadingStatus _selectedStatus = ReadingStatus.reading;
-
-  // TODO: Replace with actual data from repository/API
-  final Map<ReadingStatus, List<Map<String, dynamic>>> _libraryBooks = {
-    ReadingStatus.wantToRead: [
-      {
-        'book': const Book(
-          id: '1',
-          title: 'The Midnight Library',
-          author: 'Matt Haig',
-          coverImage: null,
-        ),
-        'status': 'Want to Read',
-      },
-    ],
-    ReadingStatus.reading: [
-      {
-        'book': const Book(
-          id: '2',
-          title: 'Atomic Habits',
-          author: 'James Clear',
-          coverImage: null,
-        ),
-        'status': 'Reading',
-        'progress': 0.65,
-      },
-      {
-        'book': const Book(
-          id: '3',
-          title: 'Project Hail Mary',
-          author: 'Andy Weir',
-          coverImage: null,
-        ),
-        'status': 'Reading',
-        'progress': 0.32,
-      },
-    ],
-    ReadingStatus.finished: [
-      {
-        'book': const Book(
-          id: '4',
-          title: 'The Silent Patient',
-          author: 'Alex Michaelides',
-          coverImage: null,
-        ),
-        'status': 'Finished',
-      },
-    ],
-  };
 
   void _handleBookTap(String bookId) {
     // TODO: Navigate to BookDetailsPage
@@ -120,53 +75,101 @@ class _MyLibraryTabState extends State<MyLibraryTab> {
 
   @override
   Widget build(BuildContext context) {
-    final books = _libraryBooks[_selectedStatus] ?? [];
+    final booksAsync = ref.watch(userLibraryProvider);
 
-    return Column(
-      children: [
-        // Status Filter
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: LibraryStatusFilter(
-            selectedStatus: _selectedStatus,
-            onStatusChanged: (status) {
-              setState(() {
-                _selectedStatus = status;
-              });
-            },
-          ),
-        ),
-
-        // Books List
-        Expanded(
-          child: books.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No books in this category',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: books.length,
-                  itemBuilder: (context, index) {
-                    final item = books[index];
-                    final book = item['book'] as Book;
-                    final status = item['status'] as String;
-                    final progress = item['progress'] as double?;
-
-                    return LibraryBookTile(
-                      book: book,
-                      status: status,
-                      progress: progress,
-                      onTap: () => _handleBookTap(book.id),
-                      onActionSelected: (action) =>
-                          _handleAction(book.id, action),
-                    );
-                  },
+    return booksAsync.when(
+      data: (books) {
+        if (books.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.book_outlined,
+                  size: 64,
+                  color: Pallete.greyColor,
                 ),
+                const SizedBox(height: 16),
+                const Text(
+                  'No books in your library yet',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Pallete.greyColor,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Join clubs and add books to build your library',
+                  style: TextStyle(fontSize: 14, color: Pallete.greyColor),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          children: [
+            // Status Filter
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: LibraryStatusFilter(
+                selectedStatus: _selectedStatus,
+                onStatusChanged: (status) {
+                  setState(() {
+                    _selectedStatus = status;
+                  });
+                },
+              ),
+            ),
+
+            // Books List
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: books.length,
+                itemBuilder: (context, index) {
+                  final book = books[index];
+
+                  return LibraryBookTile(
+                    book: book,
+                    status: 'Reading',
+                    progress: null,
+                    onTap: () => _handleBookTap(book.id),
+                    onActionSelected: (action) =>
+                        _handleAction(book.id, action),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Pallete.errorColor,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Error loading library',
+              style: TextStyle(fontSize: 18, color: Pallete.greyColor),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: const TextStyle(fontSize: 14, color: Pallete.greyColor),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

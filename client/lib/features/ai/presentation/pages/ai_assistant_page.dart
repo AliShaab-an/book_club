@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:client/core/utils/app_colors.dart';
 import '../../domain/entities/ai_message.dart';
 import '../widgets/ai_empty_state.dart';
@@ -6,18 +7,19 @@ import '../widgets/ai_quick_actions.dart';
 import '../widgets/ai_chat_message_bubble.dart';
 import '../widgets/ai_typing_indicator.dart';
 import '../widgets/ai_input_bar.dart';
+import '../providers/ai_providers.dart';
 
-class AiAssistantPage extends StatefulWidget {
+class AiAssistantPage extends ConsumerStatefulWidget {
   final String? bookTitle;
   final String? bookId;
 
   const AiAssistantPage({super.key, this.bookTitle, this.bookId});
 
   @override
-  State<AiAssistantPage> createState() => _AiAssistantPageState();
+  ConsumerState<AiAssistantPage> createState() => _AiAssistantPageState();
 }
 
-class _AiAssistantPageState extends State<AiAssistantPage> {
+class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
   final List<AiMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -73,35 +75,59 @@ class _AiAssistantPageState extends State<AiAssistantPage> {
 
     _controller.clear();
 
-    // Simulate AI response
-    // TODO: Replace with actual API call to backend (FastAPI/OpenAI)
-    Future.delayed(const Duration(seconds: 2), () {
+    // Call OpenAI API
+    _callOpenAI(message);
+  }
+
+  Future<void> _callOpenAI(String message) async {
+    try {
+      final openAIService = ref.read(openAIServiceProvider);
+
+      // Build conversation history
+      final conversationHistory = _messages.reversed
+          .take(10) // Last 10 messages for context
+          .map(
+            (msg) => {
+              'role': msg.role == AiRole.user ? 'user' : 'assistant',
+              'content': msg.text,
+            },
+          )
+          .toList();
+
+      final response = await openAIService.sendMessage(
+        message: message,
+        conversationHistory: conversationHistory,
+        bookTitle: widget.bookTitle,
+      );
+
       if (!mounted) return;
       setState(() {
         _messages.insert(
           0,
           AiMessage(
             id: DateTime.now().toString(),
-            text: _generateMockResponse(message),
+            text: response,
             role: AiRole.assistant,
             createdAt: DateTime.now(),
           ),
         );
         _isTyping = false;
       });
-    });
-  }
-
-  String _generateMockResponse(String userMessage) {
-    // Mock responses for demonstration
-    if (userMessage.toLowerCase().contains('summary')) {
-      return 'Here\'s a brief summary: This is a mock response. In production, this will be replaced with an actual AI-generated summary from your backend API.';
-    } else if (userMessage.toLowerCase().contains('question')) {
-      return '1. What themes resonate with you?\n2. How do the characters evolve?\n3. What message does the author convey?\n\n(Mock questions - will be AI-generated)';
-    } else if (userMessage.toLowerCase().contains('recommend')) {
-      return 'Based on this book, you might enjoy:\n- Similar Book 1\n- Similar Book 2\n- Similar Book 3\n\n(Mock recommendations - will be AI-generated)';
-    } else {
-      return 'I understand your question. This is a mock response. Connect me to your OpenAI backend to get real AI-powered answers!';
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.insert(
+          0,
+          AiMessage(
+            id: DateTime.now().toString(),
+            text:
+                'Sorry, I encountered an error: ${e.toString()}. Please try again.',
+            role: AiRole.assistant,
+            createdAt: DateTime.now(),
+          ),
+        );
+        _isTyping = false;
+      });
     }
   }
 

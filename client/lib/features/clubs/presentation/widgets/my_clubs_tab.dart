@@ -1,102 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:client/core/utils/app_colors.dart';
 import '../../domain/entities/club.dart';
+import '../providers/clubs_providers.dart';
 import 'my_club_card.dart';
 import 'empty_state.dart';
 
-class MyClubsTab extends StatefulWidget {
+class MyClubsTab extends ConsumerWidget {
   const MyClubsTab({super.key});
 
-  @override
-  State<MyClubsTab> createState() => _MyClubsTabState();
-}
-
-class _MyClubsTabState extends State<MyClubsTab> {
-  // TODO: Replace with actual data from repository
-  final List<Club> _myClubs = [
-    Club(
-      id: '1',
-      name: 'Classic Literature Lovers',
-      bookId: '101',
-      bookTitle: 'Pride and Prejudice',
-      bookCoverUrl: 'https://covers.openlibrary.org/b/id/8340075-L.jpg',
-      genre: 'Classic',
-      membersCount: 145,
-      unreadCount: 5,
-      createdAt: DateTime(2024, 1, 15),
-    ),
-    Club(
-      id: '2',
-      name: 'Sci-Fi Enthusiasts',
-      bookId: '102',
-      bookTitle: 'Dune',
-      bookCoverUrl: 'https://covers.openlibrary.org/b/id/8235870-L.jpg',
-      genre: 'Science Fiction',
-      membersCount: 89,
-      unreadCount: 0,
-      createdAt: DateTime(2024, 2, 10),
-    ),
-    Club(
-      id: '3',
-      name: 'Mystery Book Club',
-      bookId: '103',
-      bookTitle: 'The Silent Patient',
-      bookCoverUrl: 'https://covers.openlibrary.org/b/id/8735655-L.jpg',
-      genre: 'Mystery',
-      membersCount: 67,
-      unreadCount: 12,
-      createdAt: DateTime(2024, 3, 5),
-    ),
-  ];
-
-  bool _isRefreshing = false;
-
-  Future<void> _handleRefresh() async {
-    setState(() {
-      _isRefreshing = true;
-    });
-
-    // TODO: Call repository to fetch updated clubs
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (mounted) {
-      setState(() {
-        _isRefreshing = false;
-      });
-    }
-  }
-
-  void _navigateToClubDetails(String clubId) {
+  void _navigateToClubDetails(BuildContext context, String clubId) {
     // TODO: Navigate to ClubDetailsPage or ClubDiscussionPage
     // Navigator.pushNamed(context, '/clubs/$clubId');
   }
 
   @override
-  Widget build(BuildContext context) {
-    if (_myClubs.isEmpty) {
-      return const EmptyState(
-        icon: Icons.groups_outlined,
-        title: 'No Clubs Yet',
-        message: 'Join a club to start reading and discussing with others!',
-      );
-    }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clubsAsync = ref.watch(myClubsProvider);
 
-    return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      color: Pallete.greenColor,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _myClubs.length,
-        itemBuilder: (context, index) {
-          final club = _myClubs[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: MyClubCard(
-              club: club,
-              onTap: () => _navigateToClubDetails(club.id),
-            ),
+    return clubsAsync.when(
+      data: (clubs) {
+        if (clubs.isEmpty) {
+          return const EmptyState(
+            icon: Icons.groups_outlined,
+            title: 'No Clubs Yet',
+            message:
+                'Create or join a club to start reading and discussing with others!',
           );
-        },
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(myClubsProvider);
+          },
+          color: Pallete.greenColor,
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: clubs.length,
+            itemBuilder: (context, index) {
+              final club = clubs[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: MyClubCard(
+                  club: club,
+                  onTap: () => _navigateToClubDetails(context, club.id),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () =>  Center(
+        child: CircularProgressIndicator(color: Pallete.greenColor),
+      ),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Pallete.errorColor,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load clubs',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Pallete.blackColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: const TextStyle(fontSize: 14, color: Pallete.greyColor),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.invalidate(myClubsProvider),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Pallete.greenColor,
+                foregroundColor: Pallete.whiteColor,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

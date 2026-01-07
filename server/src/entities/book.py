@@ -18,4 +18,4 @@ class Book(Base):
 
 
     def __repr__(self):
-        return f"<Group<name='{self.title}',author='{self.author}',description='{self.description}',No.pages='{self.pages}'>"
+        return f"<Book<name='{self.title}',author='{self.author}',description='{self.description}',No.pages='{self.pages}'>"

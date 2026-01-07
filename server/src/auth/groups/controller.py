@@ -17,7 +17,7 @@ def create_group(db:DbSession,group:model.CreateGroup,current_user: CurrentUser)
     return service.create_group(current_user,db,group)
 
 
-@router.get("/",response_model=model.GroupResponse)
+@router.get("/",response_model=List[model.GroupResponse])
 def get_groups(db:DbSession, current_user: CurrentUser):
     return service.get_groups(current_user,db)
 
